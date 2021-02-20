@@ -1,0 +1,7 @@
+; moo
+.ORIG 0x0 ; does stuff
+MOV ANSHL, 0x0
+LABEL MOV SPNCR, 0x5
+MOV BAMB, 0x5
+ADD ANSHL, SPNCR, BAMB
+.END
