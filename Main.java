@@ -91,12 +91,16 @@ public class Main
       return offset;
     }
     
-    if(!OPCODE_ARRAY.contains(tokens[0]) && !tokens[0].startsWith(".")){
+    if(!OPCODE_ARRAY.contains(tokens[0]) && !tokens[0].startsWith("."))
+    {
       int address = beginningAddress + offset;
       
-      if(isHex(tokens[0])){
+      if(isHex(tokens[0]))
+      {
         throw new AssemblerException("Invalid label on line: " + line);
-      }else{
+      }
+      else
+      {
         symbolTable.put(tokens[0], address);
       }
     }
