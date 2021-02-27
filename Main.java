@@ -140,7 +140,7 @@ public class Main
   }
 
 
-  private static void secondPass(Scanner file)
+  private static void secondPass(Scanner file) throws IOException
   {
     int offset = 0;
     boolean end = false;
@@ -196,7 +196,7 @@ public class Main
     return offset + ADDRESS_OFFSET;
   }
 
-  private static int secondPassParse(String line, int offset)
+  private static int secondPassParse(String line, int offset) throws IOException
   {
     String[] tokens = line.split("[\\s,]+");
 
@@ -234,8 +234,19 @@ public class Main
 
   static class AssemblyLine
   {
-    private static void opcodeCheck(String[] tokens)
+    private static boolean initialize = false;
+    private static FileWriter writer;
+
+    private static void opcodeCheck(String[] tokens) throws IOException
     {
+      if(!initialize)
+      {
+        initialize = true;
+        writer = new FileWriter(binaryFile);
+      }
+
+      // System.out.println(Arrays.toString(tokens));
+      
       String opcode = tokens[0].toUpperCase();
       if(!isOpcode(opcode))
       {
