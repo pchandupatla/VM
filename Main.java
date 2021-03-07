@@ -5,6 +5,7 @@ public class Main
 {
   // private static HashMap<String, String> registerMap = new HashMap<>();
   // NOT OPCODE, Doesn't start with a dot
+  //TODO: fix OPCODE_ARRAY opcodes
   private static final List<String> OPCODE_ARRAY = Arrays.asList(new String[]{"ADD", "SUB", "MUL", "AND", "NOT", "XOR", "LOADB", "LOADDB", 
                                                                             "LOADQB", "STOREB", "STOREDB", "STOREQB", "MOV", "LEAP", "TRAP", "RSCOOTA", 
                                                                             "RSCOOTL", "LSCOOT", "POP", "PUSH", "HARKBACK", "DSR", "CLEAP"});
@@ -346,7 +347,7 @@ public class Main
     {
       if(tokens.length != 4)
       {
-        throw new AssemblerException("Incorrect number of arguments for ADD instruction.");
+        throw new AssemblerException("Incorrect number of arguments for " + OPCODE_ARRAY.get(opcode) +" instruction.");
       }
       // System.out.println("GOT HERE!");
       for(int i = 1; i < 3; i++)
