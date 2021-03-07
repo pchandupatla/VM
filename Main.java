@@ -1,5 +1,6 @@
 import java.util.*;
 import java.io.*;
+
 public class Main
 {
   // private static HashMap<String, String> registerMap = new HashMap<>();
@@ -7,6 +8,8 @@ public class Main
   private static final List<String> OPCODE_ARRAY = Arrays.asList(new String[]{"ADD", "SUB", "MUL", "AND", "NOT", "XOR", "LOADB", "LOADDB", 
                                                                             "LOADQB", "STOREB", "STOREDB", "STOREQB", "MOV", "LEAP", "TRAP", "RSCOOTA", 
                                                                             "RSCOOTL", "LSCOOT", "POP", "PUSH", "HARKBACK", "DSR", "CLEAP"});
+  private static final List<String> REGISTER_ARRAY = Arrays.asList(new String[]{"ANSHL", "PRNV", "MARIE", "ALVIN", "SPNCR", "LOWE", "ERIN", "ETHAN", "ABERY", "JON", 
+                                                                                "PAJAK", "ERALP", "BAMB", "RET", "SP", "PC"});                                                                            
   private static HashMap<String, Integer> symbolTable = new HashMap<>();
   private static HashMap<String, Integer> opCodeTable = new HashMap<>();
   private static final int ADDRESS_OFFSET = 4;
@@ -31,23 +34,23 @@ public class Main
     }
     else
     {
-      System.out.println(args[0]);
-      System.out.println(Arrays.toString(args[0].split("\\.")));
+      // System.out.println(args[0]);
+      // System.out.println(Arrays.toString(args[0].split("\\.")));
       binaryFile = args[0].split("\\.")[0] + FILE_EXTENSION;
     }
 
-    try 
-    {
-      File outputFile = new File(binaryFile);
-      if(!outputFile.createNewFile())
-      {
-        throw new AssemblerException("Could not create output file");
-      }
-    }
-    catch (IOException e)
-    {
-      throw new AssemblerException("Could not create output file");
-    }
+    // try 
+    // {
+    //   File outputFile = new File(binaryFile);
+    //   if(!outputFile.createNewFile())
+    //   {
+    //     throw new AssemblerException("Could not create output file");
+    //   }
+    // }
+    // catch (IOException e)
+    // {
+    //   throw new AssemblerException("Could not create output file");
+    // }
 
     // throw new AssemblerException("TEST END");
 
@@ -235,14 +238,17 @@ public class Main
   static class AssemblyLine
   {
     private static boolean initialize = false;
-    private static FileWriter writer;
+    private static BitOutputStream outputStream;
 
     private static void opcodeCheck(String[] tokens) throws IOException
     {
       if(!initialize)
       {
         initialize = true;
-        writer = new FileWriter(binaryFile);
+        FileWriter writer = new FileWriter(binaryFile, false);
+        writer.close();
+        outputStream = new BitOutputStream(binaryFile);
+        // outputStream.writeBits(1, 0);
       }
 
       // System.out.println(Arrays.toString(tokens));
@@ -300,11 +306,14 @@ public class Main
         case "TRAP":
           break;
       }
+
+      outputStream.flush();
+      outputStream.close();
     }
 
     private static void add(String[] tokens)
     {
-
+      // System.out.println("GOT HERE!");
     }
   }
 }
