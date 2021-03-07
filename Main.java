@@ -19,6 +19,10 @@ public class Main
   private static String COMMENT_STRING = ";";
   private static String FILE_EXTENSION = ".bmb";
   private static String binaryFile;
+  private static final int BITS_PER_OPCODE = 5;
+  private static final int BITS_PER_REG = 4;
+  private static final int BITS_PER_IMM = 16;
+  private static final int BITS_PER_MEM = 32;
   
   public static void main(String[] args) throws IOException
   {
@@ -38,21 +42,6 @@ public class Main
       // System.out.println(Arrays.toString(args[0].split("\\.")));
       binaryFile = args[0].split("\\.")[0] + FILE_EXTENSION;
     }
-
-    // try 
-    // {
-    //   File outputFile = new File(binaryFile);
-    //   if(!outputFile.createNewFile())
-    //   {
-    //     throw new AssemblerException("Could not create output file");
-    //   }
-    // }
-    // catch (IOException e)
-    // {
-    //   throw new AssemblerException("Could not create output file");
-    // }
-
-    // throw new AssemblerException("TEST END");
 
     File dataFile = new File(args[0]);
     Scanner file = new Scanner(dataFile);
@@ -96,6 +85,9 @@ public class Main
     file = new Scanner(dataFile);
     secondPass(file);
     file.close();
+
+    AssemblyLine.outputStream.flush();
+    AssemblyLine.outputStream.close();
     // System.out.println(file.nextLine());
   }
 
@@ -235,6 +227,11 @@ public class Main
     return OPCODE_ARRAY.contains(opcode);
   }
 
+  private static int registerIndex(String register)
+  {
+    return REGISTER_ARRAY.indexOf(register);
+  }
+
   static class AssemblyLine
   {
     private static boolean initialize = false;
@@ -248,7 +245,7 @@ public class Main
         FileWriter writer = new FileWriter(binaryFile, false);
         writer.close();
         outputStream = new BitOutputStream(binaryFile);
-        // outputStream.writeBits(1, 0);
+        outputStream.writeBits(BITS_PER_MEM, beginningAddress);
       }
 
       // System.out.println(Arrays.toString(tokens));
@@ -265,14 +262,19 @@ public class Main
           add(tokens);
           break;
         case "SUB":
+          sub(tokens);
           break;
         case "MUL":
+          mul(tokens);
           break;
         case "AND":
+          and(tokens);
           break;
         case "NOT":
+          not(tokens);
           break;
         case "XOR":
+          xor(tokens);
           break;
         case "LOADB":
           break;
@@ -306,14 +308,83 @@ public class Main
         case "TRAP":
           break;
       }
-
-      outputStream.flush();
-      outputStream.close();
     }
 
     private static void add(String[] tokens)
     {
+      arithmetic(tokens, 0);
+    }
+
+    private static void sub(String[] tokens)
+    {
+      arithmetic(tokens, 1);
+    }
+
+    private static void mul(String[] tokens)
+    {
+      arithmetic(tokens, 2);
+    }
+
+    private static void and(String[] tokens)
+    {
+      arithmetic(tokens, 3);
+    }
+
+    private static void not(String[] tokens)
+    {
+      String[] newTokens = new String[]{"XOR", tokens[1], tokens[1], "0xFFFF"};
+      arithmetic(newTokens, 5);
+    }
+
+    private static void xor(String[] tokens)
+    {
+      arithmetic(tokens, 5);
+    }
+
+
+    private static void arithmetic(String[] tokens, int opcode)
+    {
+      if(tokens.length != 4)
+      {
+        throw new AssemblerException("Incorrect number of arguments for ADD instruction.");
+      }
       // System.out.println("GOT HERE!");
+      for(int i = 1; i < 3; i++)
+      {
+        registerCheck(tokens[i]);
+      }
+
+      outputStream.writeBits(BITS_PER_OPCODE, opcode);
+      outputStream.writeBits(BITS_PER_REG, registerIndex(tokens[1]));
+      outputStream.writeBits(BITS_PER_REG, registerIndex(tokens[2]));
+      boolean immediate = isHex(tokens[3]);
+      
+      if(immediate)
+      {
+        String hex = tokens[3].substring(2);
+        int imm = Integer.parseInt(hex, 16);
+
+        if(imm > 0XFFFF || imm < -0X8000)
+        {
+          throw new AssemblerException("Immediate: " + hex + " is not a valid immediate");  
+        }
+
+        outputStream.writeBits(3, 4);
+        outputStream.writeBits(BITS_PER_IMM, imm);
+      }
+      else
+      {
+        outputStream.writeBits(15, 0);
+        registerCheck(tokens[3]);
+        outputStream.writeBits(BITS_PER_REG, registerIndex(tokens[3]));
+      }
+    }
+    private static void registerCheck(String register)
+    {
+      if(registerIndex(register) == -1)
+      {
+        throw new AssemblerException(register + " is not a valid register.");
+      }
     }
   }
 }

@@ -6,9 +6,12 @@ public class Test
   {
     BitInputStream test = new BitInputStream("boob.bmb");
     int bits;
-    while((bits = test.readBits(1)) != - 1)
+    while((bits = test.readBits(32)) != - 1)
     {
-      System.out.println(bits);
+      String b = Integer.toBinaryString(bits);
+      String save = String.format("%32s", b).replace(' ', '0');
+      String h = String.format("0x%8x", bits).replace(' ', '0');
+      System.out.println(save + "\t" + h);
     }
   }
 }
