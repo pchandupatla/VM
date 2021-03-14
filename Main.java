@@ -233,7 +233,7 @@ public class Main
     return REGISTER_ARRAY.indexOf(register);
   }
 
-  static class AssemblyLine
+  private static class AssemblyLine
   {
     private static boolean initialize = false;
     private static BitOutputStream outputStream;
