@@ -259,70 +259,70 @@ public class Main
 
       switch(opcode)
       {
-        case "ADD":
+        case "ADD": // 1
           add(tokens);
           break;
-        case "SUB":
+        case "SUB": // 2
           sub(tokens);
           break;
-        case "MUL":
+        case "MUL": // 3
           mul(tokens);
           break;
-        case "AND":
+        case "AND": // 4
           and(tokens);
           break;
-        case "NOT":
+        case "NOT": // 5
           not(tokens);
           break;
-        case "XOR":
+        case "XOR": // 5
           xor(tokens);
           break;
-        case "LOADB":
+        case "LOADB": // 6
           loadb(tokens);
           break;
-        case "LOADDB":
+        case "LOADDB": // 7
           loaddb(tokens);
           break;
-        case "LOADQB":
+        case "LOADQB": // 8
           loadqb(tokens);
           break;
-        case "STOREB":
+        case "STOREB": // 9
           storeb(tokens);
           break;
-        case "STOREDB":
+        case "STOREDB": // 10
           storedb(tokens);
           break;
-        case "STOREQB":
+        case "STOREQB": // 11
           storeqb(tokens);
           break;
-        case "MOV":
+        case "MOV": // 12
           mov(tokens, offset);
           break;
-        case "LEAP":
+        case "LEAP": // 13
           leap(tokens);
           break;
-        case "CLEAP":
+        case "CLEAP": // 13
           cleap(tokens, 0);
           break;
-        case "CLEAPN":
-          cleap(tokens, 4);
-          break;
-        case "CLEAPZ":
-          cleap(tokens, 2);
-          break;
-        case "CLEAPP":
+        case "CLEAPP": // 13
           cleap(tokens, 1);
           break;
-        case "CLEAPNZ":
-          cleap(tokens, 6);
+        case "CLEAPZ": // 13
+          cleap(tokens, 2);
           break;
-        case "CLEAPZP":
+        case "CLEAPZP": // 13
           cleap(tokens, 3);
           break;
-        case "CLEAPNP":
+        case "CLEAPN": // 13
+          cleap(tokens, 4);
+          break;
+        case "CLEAPNP": // 13
           cleap(tokens, 5);
           break;
-        case "CLEAPNZP":
+        case "CLEAPNZ": // 13
+          cleap(tokens, 6);
+          break;
+        case "CLEAPNZP": // 13
           cleap(tokens, 7);
           break;
         case "DSR":
