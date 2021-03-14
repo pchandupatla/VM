@@ -8,7 +8,7 @@ public class Main
   //TODO: fix OPCODE_ARRAY opcodes
   private static final List<String> OPCODE_ARRAY = Arrays.asList(new String[]{"ADD", "SUB", "MUL", "AND", "NOT", "XOR", "LOADB", "LOADDB", 
                                                                             "LOADQB", "STOREB", "STOREDB", "STOREQB", "MOV", "LEAP", "TRAP", "RSCOOTA", 
-                                                                            "RSCOOTL", "LSCOOT", "POP", "PUSH", "HARKBACK", "DSR", "CLEAP"});
+                                                                            "RSCOOTL", "LSCOOT", "POP", "PUSH", "HARKBACK", "DSR", "CLEAP", "CLEAPN", "CLEAPZ", "CLEAPP", "CLEAPNZ", "CLEAPNP", "CLEAPZP", "CLEAPNZP"});
   private static final List<String> REGISTER_ARRAY = Arrays.asList(new String[]{"ANSHL", "PRNV", "MARIE", "ALVIN", "SPNCR", "LOWE", "ERIN", "ETHAN", "ABERY", "JON", 
                                                                                 "PAJAK", "ERALP", "BAMB", "RET", "SP", "PC"});                                                                            
   private static HashMap<String, Integer> symbolTable = new HashMap<>();
@@ -128,7 +128,7 @@ public class Main
         continue;
       }
 
-      // System.out.printf("%s - %d\n", currLine, beginningAddress + offset);
+      // System.out.printf("%s - %x\n", currLine, beginningAddress + offset);
       offset = firstPassParse(currLine, offset);
     }
 
@@ -202,12 +202,12 @@ public class Main
     }
 
     //first token is label
-    if(!isOpcode(tokens[0]))
+    if(!isOpcode(tokens[0].toUpperCase()))
     {
       tokens = Arrays.copyOfRange(tokens, 1, tokens.length);
     }
     
-    AssemblyLine.opcodeCheck(tokens);
+    AssemblyLine.opcodeCheck(tokens, offset + ADDRESS_OFFSET);
     
     return offset + ADDRESS_OFFSET;
   }
@@ -238,7 +238,7 @@ public class Main
     private static boolean initialize = false;
     private static BitOutputStream outputStream;
 
-    private static void opcodeCheck(String[] tokens) throws IOException
+    private static void opcodeCheck(String[] tokens, int offset) throws IOException
     {
       if(!initialize)
       {
@@ -254,7 +254,7 @@ public class Main
       String opcode = tokens[0].toUpperCase();
       if(!isOpcode(opcode))
       {
-        throw new AssemblerException("Opcode: " + tokens[0] + "not recognized");
+        throw new AssemblerException("Opcode: " + tokens[0] + " not recognized");
       }
 
       switch(opcode)
@@ -278,21 +278,52 @@ public class Main
           xor(tokens);
           break;
         case "LOADB":
+          loadb(tokens);
           break;
         case "LOADDB":
+          loaddb(tokens);
           break;
         case "LOADQB":
+          loadqb(tokens);
           break;
         case "STOREB":
+          storeb(tokens);
           break;
         case "STOREDB":
+          storedb(tokens);
           break;
         case "STOREQB":
+          storeqb(tokens);
           break;
         case "MOV":
+          mov(tokens, offset);
           break;
         case "LEAP":
+          leap(tokens);
+          break;
         case "CLEAP":
+          cleap(tokens, 0);
+          break;
+        case "CLEAPN":
+          cleap(tokens, 4);
+          break;
+        case "CLEAPZ":
+          cleap(tokens, 2);
+          break;
+        case "CLEAPP":
+          cleap(tokens, 1);
+          break;
+        case "CLEAPNZ":
+          cleap(tokens, 6);
+          break;
+        case "CLEAPZP":
+          cleap(tokens, 3);
+          break;
+        case "CLEAPNP":
+          cleap(tokens, 5);
+          break;
+        case "CLEAPNZP":
+          cleap(tokens, 7);
           break;
         case "DSR":
           break;
@@ -342,12 +373,111 @@ public class Main
       arithmetic(tokens, 5);
     }
 
+    private static void loadb(String[] tokens)
+    {
+      load(tokens, 6); 
+    }
+
+    private static void loaddb(String[] tokens)
+    {
+      load(tokens, 7);
+    }
+
+    private static void loadqb(String[] tokens)
+    {
+      load(tokens, 8);
+    }
+
+    private static void storeb(String[] tokens)
+    {
+      load(tokens, 9);
+    }
+
+    private static void storedb(String[] tokens)
+    {
+      load(tokens, 10);
+    }
+
+    private static void storeqb(String[] tokens)
+    {
+      load(tokens, 11);
+    }
+
+    private static void mov(String[] tokens, int offset)
+    {
+      int opcode = 12;
+      if(tokens.length != 3)
+      {
+        throw new AssemblerException("Incorrect number of arguments for " + OPCODE_ARRAY.get(opcode) + " instruction.");
+      }
+
+      registerCheck(tokens[1]);
+      outputStream.writeBits(BITS_PER_OPCODE, opcode);
+      outputStream.writeBits(BITS_PER_REG, registerIndex(tokens[1]));
+      if(isHex(tokens[2]))
+      {
+        String hex = tokens[2].substring(2);
+        int imm = Integer.parseInt(hex, 16);
+        if(imm > 0X7FFFFF || imm < -0X400000)
+        {
+          throw new AssemblerException("Immediate: " + hex + " is not a valid immediate");
+        }
+        outputStream.writeBits(23, imm);
+      }
+      else
+      {
+        if(!symbolTable.containsKey(tokens[2]))
+        {
+          throw new AssemblerException("Symbol: "+ tokens[2]+" not found.");
+        }
+
+        int diff = (symbolTable.get(tokens[2]) - (beginningAddress + offset)) / ADDRESS_OFFSET;
+
+        if(diff > 0X7FFFFF || diff < -0X400000)
+        {
+          throw new AssemblerException("Immediate: " + diff + " is not a valid immediate");
+        }
+
+        outputStream.writeBits(23, diff);
+      }
+    }
+
+    private static void leap(String[] tokens)
+    {
+      cleap(tokens, 7);
+    }
+
+    private static void cleap(String[] tokens, int condition)
+    {
+      int opcode = 13;
+      if(tokens.length != 3)
+      {
+        throw new AssemblerException("Incorrect number of arguments for " + OPCODE_ARRAY.get(opcode) + " instruction.");
+      }
+
+      registerCheck(tokens[1]);
+      outputStream.writeBits(BITS_PER_OPCODE, opcode);
+      outputStream.writeBits(3, condition);
+      outputStream.writeBits(BITS_PER_REG, registerIndex(tokens[1]));
+      
+      if(!isHex(tokens[2]))
+      {
+        throw new AssemblerException("Second LEAP argument must specify a hex offset");
+      }
+      String hex = tokens[2].substring(2);
+      int imm = Integer.parseInt(hex, 16);
+      if(imm > 0XFFFFF || imm < -0X80000)
+      {
+        throw new AssemblerException("Immediate: " + hex + " is not a valid immediate");
+      }
+      outputStream.writeBits(20, imm);
+    }
 
     private static void arithmetic(String[] tokens, int opcode)
     {
       if(tokens.length != 4)
       {
-        throw new AssemblerException("Incorrect number of arguments for " + OPCODE_ARRAY.get(opcode) +" instruction.");
+        throw new AssemblerException("Incorrect number of arguments for " + OPCODE_ARRAY.get(opcode) + " instruction.");
       }
       // System.out.println("GOT HERE!");
       for(int i = 1; i < 3; i++)
@@ -380,6 +510,25 @@ public class Main
         outputStream.writeBits(BITS_PER_REG, registerIndex(tokens[3]));
       }
     }
+
+    private static void load(String[] tokens, int opcode)
+    {
+      if(tokens.length != 3)
+      {
+        throw new AssemblerException("Incorrect number of arguments for " + OPCODE_ARRAY.get(opcode) + " instruction.");
+      }
+
+      for(int i = 1; i < 3; i++)
+      {
+        registerCheck(tokens[i]);
+      }
+
+      outputStream.writeBits(BITS_PER_OPCODE, opcode);
+      outputStream.writeBits(BITS_PER_REG, registerIndex(tokens[1]));
+      outputStream.writeBits(19, 0);
+      outputStream.writeBits(BITS_PER_REG, registerIndex(tokens[2]));
+    }
+
     private static void registerCheck(String register)
     {
       if(registerIndex(register) == -1)
