@@ -325,19 +325,29 @@ public class Main
         case "CLEAPNZP": // 13
           cleap(tokens, 7);
           break;
-        case "DSR":
+        case "DSR": // 14
+          dsr(tokens);
           break;
         case "HARKBACK":
+          harkback(tokens); // 15
           break;
         case "PUSH":
+          push(tokens);
           break;
         case "POP":
+          pop(tokens);
           break;
         case "LSCOOT":
+          scoot(tokens, 0);
+          break;
         case "RSCOOTL":
+          scoot(tokens, 1);
+          break;
         case "RSCOOTA":
+          scoot(tokens, 3);
           break;
         case "TRAP":
+          trap(tokens);
           break;
       }
     }
@@ -473,6 +483,99 @@ public class Main
       outputStream.writeBits(20, imm);
     }
 
+    private static void dsr(String[] tokens)
+    {
+      oneRegister(tokens, 14);
+    }
+
+    private static void harkback(String[] tokens)
+    {
+      int opcode = 15;
+      if (tokens.length != 1)
+      {
+        throw new AssemblerException("Incorrect number of arguments for " + OPCODE_ARRAY.get(opcode) + " instruction.");
+      }
+
+      outputStream.writeBits(BITS_PER_OPCODE, opcode);
+      outputStream.writeBits(27, 0);
+    }
+
+    private static void push(String[] tokens)
+    {
+      oneRegister(tokens, 16);
+    }
+
+    private static void pop(String[] tokens)
+    {
+      oneRegister(tokens, 17);
+    }
+
+    private static void scoot(String[] tokens, int steering)
+    {
+      int opcode = 18;
+      if(tokens.length != 3)
+      {
+        throw new AssemblerException("Incorrect number of arguments for " + OPCODE_ARRAY.get(opcode) + " instruction.");
+      }
+
+      registerCheck(tokens[1]);
+      if(!isHex(tokens[2]))
+      {
+        throw new AssemblerException(tokens[2] + " is not a hex number.");
+      }
+
+      String hex = tokens[2].substring(2);
+      int imm = Integer.parseInt(hex, 16);
+      if(imm > 0X1F || imm < 0)
+      {
+        throw new AssemblerException(imm + " is not a valid scoot number");
+      }
+
+      outputStream.writeBits(BITS_PER_OPCODE, opcode);
+      outputStream.writeBits(BITS_PER_REG, registerIndex(tokens[1]));
+      outputStream.writeBits(2, steering);
+      outputStream.writeBits(16, 0);
+      outputStream.writeBits(5, imm);
+    }
+
+    private static void trap(String[] tokens)
+    {
+      int opcode = 19;
+      if(tokens.length != 2)
+      {
+        throw new AssemblerException("Incorrect number of arguments for " + OPCODE_ARRAY.get(opcode) + " instruction.");
+      }
+
+      if(!isHex(tokens[1]))
+      {
+        throw new AssemblerException(tokens[1] + " is not a hex number.");
+      }
+
+      String hex = tokens[1].substring(2);
+      int imm = Integer.parseInt(hex, 16);
+      if(imm > 0X7FFFFFF || imm < 0)
+      {
+        throw new AssemblerException(imm + " is not a valid trap number");
+      }
+
+      outputStream.writeBits(BITS_PER_OPCODE, opcode);
+      outputStream.writeBits(5, 27);
+    }
+
+    private static void oneRegister(String[] tokens, int opcode)
+    {
+      if(tokens.length != 2)
+      {
+        throw new AssemblerException("Incorrect number of arguments for " + OPCODE_ARRAY.get(opcode) + " instruction.");
+      }
+
+      registerCheck(tokens[1]);
+      outputStream.writeBits(BITS_PER_OPCODE, opcode);
+      outputStream.writeBits(23, 0);
+      outputStream.writeBits(BITS_PER_REG, registerIndex(tokens[1]));
+    }
+
+    
     private static void arithmetic(String[] tokens, int opcode)
     {
       if(tokens.length != 4)
