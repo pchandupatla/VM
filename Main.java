@@ -220,17 +220,21 @@ public class Main
       return false;
     }
 
+    if(line.charAt(0) == '-')
+    {
+      return line.substring(1, 3).equalsIgnoreCase(hexIdentifier);
+    }
+
     return line.substring(0, 2).equalsIgnoreCase(hexIdentifier);
   }
 
   private static int hexToImm(String line)
   {
-    int multiply = 1;
     if(line.charAt(0) == '-')
     {
-      multiply = -1;
+      return -1 * Integer.parseInt(line.substring(3), 16);
     }
-    return multiply * Integer.parseInt(line.substring(2), 16);
+    return Integer.parseInt(line.substring(2), 16);
   }
 
   private static boolean isOpcode(String opcode)
