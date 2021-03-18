@@ -223,6 +223,16 @@ public class Main
     return line.substring(0, 2).equalsIgnoreCase(hexIdentifier);
   }
 
+  private static int hexToImm(String line)
+  {
+    int multiply = 1;
+    if(line.charAt(0) == '-')
+    {
+      multiply = -1;
+    }
+    return multiply * Integer.parseInt(line.substring(2), 16);
+  }
+
   private static boolean isOpcode(String opcode)
   {
     return OPCODE_ARRAY.contains(opcode);
@@ -426,11 +436,10 @@ public class Main
       outputStream.writeBits(BITS_PER_REG, registerIndex(tokens[1]));
       if(isHex(tokens[2]))
       {
-        String hex = tokens[2].substring(2);
-        int imm = Integer.parseInt(hex, 16);
+        int imm = hexToImm(tokens[2]);
         if(imm > 0X7FFFFF || imm < -0X400000)
         {
-          throw new AssemblerException("Immediate: " + hex + " is not a valid immediate");
+          throw new AssemblerException("Immediate: " + imm + " is not a valid immediate");
         }
         outputStream.writeBits(23, imm);
       }
@@ -474,11 +483,10 @@ public class Main
       {
         throw new AssemblerException("Second LEAP argument must specify a hex offset");
       }
-      String hex = tokens[2].substring(2);
-      int imm = Integer.parseInt(hex, 16);
+      int imm = hexToImm(tokens[2]);
       if(imm > 0XFFFFF || imm < -0X80000)
       {
-        throw new AssemblerException("Immediate: " + hex + " is not a valid immediate");
+        throw new AssemblerException("Immediate: " + imm + " is not a valid immediate");
       }
       outputStream.writeBits(20, imm);
     }
@@ -524,8 +532,7 @@ public class Main
         throw new AssemblerException(tokens[2] + " is not a hex number.");
       }
 
-      String hex = tokens[2].substring(2);
-      int imm = Integer.parseInt(hex, 16);
+      int imm = hexToImm(tokens[2]);
       if(imm > 0X1F || imm < 0)
       {
         throw new AssemblerException(imm + " is not a valid scoot number");
@@ -551,8 +558,7 @@ public class Main
         throw new AssemblerException(tokens[1] + " is not a hex number.");
       }
 
-      String hex = tokens[1].substring(2);
-      int imm = Integer.parseInt(hex, 16);
+      int imm = hexToImm(tokens[1]);
       if(imm > 0X7FFFFFF || imm < 0)
       {
         throw new AssemblerException(imm + " is not a valid trap number");
@@ -595,12 +601,11 @@ public class Main
       
       if(immediate)
       {
-        String hex = tokens[3].substring(2);
-        int imm = Integer.parseInt(hex, 16);
+        int imm = hexToImm(tokens[3]);
 
         if(imm > 0XFFFF || imm < -0X8000)
         {
-          throw new AssemblerException("Immediate: " + hex + " is not a valid immediate");  
+          throw new AssemblerException("Immediate: " + imm + " is not a valid immediate");  
         }
 
         outputStream.writeBits(3, 4);
