@@ -273,16 +273,16 @@ public class Main
 
       switch(opcode)
       {
-        case "ADD": // 1
+        case "ADD": // 0
           add(tokens);
           break;
-        case "SUB": // 2
+        case "SUB": // 1
           sub(tokens);
           break;
-        case "MUL": // 3
+        case "MUL": // 2
           mul(tokens);
           break;
-        case "AND": // 4
+        case "AND": // 3
           and(tokens);
           break;
         case "NOT": // 5
@@ -346,22 +346,22 @@ public class Main
           harkback(tokens); // 15
           break;
         case "PUSH":
-          push(tokens);
+          push(tokens); // 16
           break;
         case "POP":
-          pop(tokens);
+          pop(tokens); // 17
           break;
         case "LSCOOT":
-          scoot(tokens, 0);
+          scoot(tokens, 0); // 18
           break;
         case "RSCOOTL":
-          scoot(tokens, 1);
+          scoot(tokens, 1); // 18
           break;
         case "RSCOOTA":
-          scoot(tokens, 3);
+          scoot(tokens, 3); // 18
           break;
         case "TRAP":
-          trap(tokens);
+          trap(tokens); // 18
           break;
       }
     }
