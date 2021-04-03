@@ -454,12 +454,7 @@ public class Main
           throw new AssemblerException("Symbol: "+ tokens[2]+" not found.");
         }
 
-        int diff = (symbolTable.get(tokens[2]) - (beginningAddress + offset)) / ADDRESS_OFFSET;
-
-        if(diff > 0X7FFFFF || diff < -0X400000)
-        {
-          throw new AssemblerException("Immediate: " + diff + " is not a valid immediate");
-        }
+        int diff = (symbolTable.get(tokens[2]));
 
         outputStream.writeBits(23, diff);
       }

@@ -1,0 +1,12 @@
+void add(int instr);
+void sub(int instr);
+void mul(int instr);
+void and(int instr);
+void xor(int instr);
+void loadb(int instr);
+void loaddb(int instr);
+void loadqb(int instr);
+void storeb(int instr);
+void storedb(int instr);
+void storeqb(int instr);
+void mov(int instr);

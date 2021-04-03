@@ -4,7 +4,7 @@
 #include <stdbool.h>
 #include <string.h>
 #include "register.h"
-
+#include "commands.h"
 
 #define INSTR_LEN 4
 #define MEM_SIZE 65536
@@ -21,10 +21,8 @@ void mdump(char * cmd);
 void exec_instr(void);
 void run(char * cmd);
 void go(void);
+void ex(void);
 int get_bits(int start, int end, uint32_t data);
-void add(int instr);
-void sub(int instr);
-void mul(int instr);
 
 int start_found = 0;
 
@@ -96,7 +94,10 @@ void init(char *argv[])
     }
   }
 
-  run_command();
+  while(1)
+  {
+    run_command();
+  }
 }
 
 void run_command(void)
@@ -127,12 +128,21 @@ void run_command(void)
     case 'g':
       go();
       break;
+    case 'e':
+      ex();
+      break;
     default:
       printf("No command by that name (or even starting letter), dumbass\n");
       break;
   }
   
   free(cmd);
+}
+
+void ex(void)
+{
+  printf("Exiting session\n");
+  exit(1);
 }
 
 void ldump(void)
@@ -150,11 +160,13 @@ void ldump(void)
 
 void mdump(char *cmd)
 {
+  // printf("GOT HERE!\n");
   strtok(cmd, " ");
   char *start = strtok(NULL, " ");
   if(start == NULL)
   {
-    error("Must specify beginning and end memory address\n");
+    printf("Must specify beginning and end memory address\n");
+    return;
   }
   char * ptr;
   int start_addr = (int)strtol(start, &ptr, 16);
@@ -162,10 +174,16 @@ void mdump(char *cmd)
   char *end = strtok(NULL, " ");
   if(end == NULL)
   {
-    error("Must specify beginning and end memory address\n");
+    printf("Must specify beginning and end memory address\n");
+    return;
   }
   char * temp;
   int end_addr = (int)strtol(end, &temp, 16);
+
+  if(start_addr < 0 || end_addr < 0)
+  {
+    printf("Addresses may not be negative\n");
+  }
 
   //printf("%x %x\n", start_addr, end_addr);
   for(int i = start_addr; i <= end_addr; i++)
@@ -180,7 +198,8 @@ void run(char *cmd)
   char *num_s = strtok(NULL, " ");
 
   if(num_s == NULL){
-    error("Must specify number of runs\n");
+    printf("Must specify number of runs\n");
+    return;
   }
 
   int num = atoi(num_s);
@@ -193,7 +212,9 @@ void run(char *cmd)
     CURRENT_LATCHES = NEXT_LATCHES;
 
     // debug:
-    ldump();
+    // ldump();
+    // char *cmd = "m bb8 bb8";
+    // mdump("m bb8 bb8");
   }
 }
 
@@ -218,6 +239,34 @@ void exec_instr(void)
     case 2:
       mul(instruction);
       break;
+    case 3:
+      and(instruction);
+      break;
+    case 5:
+      xor(instruction);
+      break;
+    case 6:
+      loadb(instruction);
+      break;
+    case 7:
+      loaddb(instruction);
+      break;
+    case 8:
+      loadqb(instruction);
+      break;
+    case 9:
+      storeb(instruction);
+      break;
+    case 10:
+      storedb(instruction);
+      break;
+    case 11:
+      storeqb(instruction);
+      break;
+    case 12:
+      mov(instruction);
+      break;
+    
   }
 }
 
@@ -295,6 +344,133 @@ void mul(int instr)
   }
 
   NEXT_LATCHES.REGS[regA] = CURRENT_LATCHES.REGS[regB] * imm;
+  setcc(NEXT_LATCHES.REGS[regA]);
+}
+
+
+void and(int instr)
+{
+  int regA = get_bits(23, 26, instr);
+  int regB = get_bits(19, 22, instr);
+
+  int imm;
+  if(get_bits(18, 18, instr) == 1)
+  {
+    imm = get_bits(0, 15, instr);
+  }
+  else
+  {
+    imm = CURRENT_LATCHES.REGS[get_bits(0, 3, instr)]; 
+  }
+
+  NEXT_LATCHES.REGS[regA] = CURRENT_LATCHES.REGS[regB] & imm;
+  setcc(NEXT_LATCHES.REGS[regA]);
+}
+
+void xor(int instr)
+{
+  int regA = get_bits(23, 26, instr);
+  int regB = get_bits(19, 22, instr);
+
+  int imm;
+  if(get_bits(18, 18, instr) == 1)
+  {
+    imm = get_bits(0, 15, instr);
+  }
+  else
+  {
+    imm = CURRENT_LATCHES.REGS[get_bits(0, 3, instr)]; 
+  }
+
+  NEXT_LATCHES.REGS[regA] = CURRENT_LATCHES.REGS[regB] ^ imm;
+  setcc(NEXT_LATCHES.REGS[regA]);
+}
+
+void loadb(int instr)
+{
+  int regA = get_bits(23, 26, instr);
+  int regB = get_bits(0, 3, instr);
+
+  NEXT_LATCHES.REGS[regA] = (MEMORY[CURRENT_LATCHES.REGS[regB]]) << ((sizeof(int) * 8) - 8);
+  NEXT_LATCHES.REGS[regA] = NEXT_LATCHES.REGS[regA] >> ((sizeof(int) * 8) - 8);
+  setcc(NEXT_LATCHES.REGS[regA]);
+}
+
+void loaddb(int instr)
+{
+  int regA = get_bits(23, 26, instr);
+  int regB = get_bits(0, 3, instr);
+  
+  int temp = (MEMORY[CURRENT_LATCHES.REGS[regB]]) << ((sizeof(int) * 8) - 8);
+  temp = temp >> ((sizeof(int) * 8) - 16);
+
+  NEXT_LATCHES.REGS[regA] = (MEMORY[CURRENT_LATCHES.REGS[regB] + 1]);
+
+  NEXT_LATCHES.REGS[regA] += temp;
+  setcc(NEXT_LATCHES.REGS[regA]);
+}
+
+void loadqb(int instr)
+{
+  int regA = get_bits(23, 26, instr);
+  int regB = get_bits(0, 3, instr);
+  
+  int temp = (MEMORY[CURRENT_LATCHES.REGS[regB]]) << ((sizeof(int) * 8) - 8);
+  temp = temp >> ((sizeof(int) * 8) - 32);
+
+  NEXT_LATCHES.REGS[regA] = (MEMORY[CURRENT_LATCHES.REGS[regB] + 1]) << ((sizeof(int) * 8) - 16);
+  NEXT_LATCHES.REGS[regA] += temp;
+
+  temp = (MEMORY[CURRENT_LATCHES.REGS[regB] + 2]) << ((sizeof(int) * 8) - 24);
+  NEXT_LATCHES.REGS[regA] += temp;
+
+  temp = (MEMORY[CURRENT_LATCHES.REGS[regB] + 3]) << ((sizeof(int) * 8) - 32);
+  NEXT_LATCHES.REGS[regA] += temp;
+  
+  setcc(NEXT_LATCHES.REGS[regA]);
+}
+
+void storeb(int instr)
+{
+  int regA = get_bits(23, 26, instr);
+  int regB = get_bits(0, 3, instr);
+
+  MEMORY[CURRENT_LATCHES.REGS[regA]] = (CURRENT_LATCHES.REGS[regB]) & 0xFF;
+}
+
+void storedb(int instr)
+{
+  int regA = get_bits(23, 26, instr);
+  int regB = get_bits(0, 3, instr);
+
+  int32_t bVal = CURRENT_LATCHES.REGS[regB];
+
+  MEMORY[CURRENT_LATCHES.REGS[regA]] = (uint8_t) ((bVal & 0xFF00) >> 8);
+  MEMORY[CURRENT_LATCHES.REGS[regA] + 1] = (uint8_t) (bVal & 0xFF);
+}
+
+void storeqb(int instr)
+{
+  int regA = get_bits(23, 26, instr);
+  int regB = get_bits(0, 3, instr);
+
+  int32_t bVal = CURRENT_LATCHES.REGS[regB];
+
+  MEMORY[CURRENT_LATCHES.REGS[regA]] = (uint8_t) ((bVal & 0xFF000000) >> 24);
+  MEMORY[CURRENT_LATCHES.REGS[regA] + 1] = (uint8_t) ((bVal & 0xFF0000) >> 16);
+  MEMORY[CURRENT_LATCHES.REGS[regA] + 2] = (uint8_t) ((bVal & 0xFF00) >> 8);
+  MEMORY[CURRENT_LATCHES.REGS[regA] + 3] = (uint8_t) (bVal & 0xFF);
+}
+
+void mov(int instr)
+{
+  int regA = get_bits(23, 26, instr);
+  int imm = get_bits(0, 22, instr);
+
+  imm = imm << (sizeof(int) * 8 - 23);
+  imm = imm >> (sizeof(int) * 8 - 23);
+
+  NEXT_LATCHES.REGS[regA] = imm;
   setcc(NEXT_LATCHES.REGS[regA]);
 }
 
