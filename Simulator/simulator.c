@@ -191,7 +191,9 @@ void run(char *cmd)
     return;
   }
   
-  strtok(cmd, " ");
+  char copy[sizeof(char) * 8];
+  strncpy(copy, cmd, 8);
+  strtok(copy, " ");
   char *num_s = strtok(NULL, " ");
 
   if(num_s == NULL)
@@ -221,9 +223,6 @@ void exec_instr(void)
   NEXT_LATCHES.REGS[PC_NUM] = pc + 4;
   uint32_t instruction = CURRENT_LATCHES.IR;
   uint32_t opcode = get_bits(27, 31, instruction);
-  //(instruction & 0xF8000000) >> 27;
-  // printf("INSTR: 0x%x\n", instruction);
-  // printf("OPCODE: 0x%x\n", opcode);
 
   switch(opcode)
   {
@@ -611,12 +610,19 @@ int get_bits(int start, int end, uint32_t data)
 
 void go(void)
 {
-  while(NEXT_LATCHES.REGS[PC_NUM] != 0)
-  {
-    run("r 1");
-  }
+  char *cmd = (char *) malloc(8 * sizeof(char));
+  char r[8] = "r 1";
+  strncpy(cmd, r, sizeof(char) * 8);
 
-  halted = 1;
+  while(1)
+  {
+    run(cmd);
+    if(halted)
+    {
+      break;
+    }
+  }
+  free(cmd);
 }
 
 void error(const char * error_string)
