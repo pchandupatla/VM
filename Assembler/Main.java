@@ -361,7 +361,7 @@ public class Main
           scoot(tokens, 3); // 18
           break;
         case "TRAP":
-          trap(tokens); // 18
+          trap(tokens); // 19
           break;
       }
     }
@@ -564,7 +564,7 @@ public class Main
       }
 
       outputStream.writeBits(BITS_PER_OPCODE, opcode);
-      outputStream.writeBits(5, 27);
+      outputStream.writeBits(27, imm);
     }
 
     private static void oneRegister(String[] tokens, int opcode)

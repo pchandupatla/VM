@@ -25,6 +25,7 @@ void ex(void);
 int get_bits(int start, int end, uint32_t data);
 
 int start_found = 0;
+int halted = 0;
 
 uint8_t MEMORY[MEM_SIZE];
 
@@ -83,16 +84,6 @@ void init(char *argv[])
   orig_address = CURRENT_LATCHES.REGS[PC_NUM];
   CURRENT_LATCHES.IR = (MEMORY[orig_address] << 24) + (MEMORY[orig_address + 1] << 16) + (MEMORY[orig_address + 2] << 8) + MEMORY[orig_address + 3];
   CURRENT_LATCHES.REGS[SP_NUM] = MEM_SIZE;
-
-  //debug code
-  for(int i = 0; i < 28; i++)
-  {
-    printf("%.2x", MEMORY[orig_address++]);
-    if(orig_address % 4 == 0)
-    {
-      printf("\n");
-    }
-  }
 
   while(1)
   {
@@ -194,21 +185,32 @@ void mdump(char *cmd)
 
 void run(char *cmd)
 {
+  if(halted)
+  {
+    printf("Simulator halted\n");
+    return;
+  }
+  
   strtok(cmd, " ");
   char *num_s = strtok(NULL, " ");
 
-  if(num_s == NULL){
+  if(num_s == NULL)
+  {
     printf("Must specify number of runs\n");
     return;
   }
 
   int num = atoi(num_s);
 
-  for(int i = 0; i < num; i++)
+  for(int i = 0; i < num && !halted; i++)
   {
     NEXT_LATCHES = CURRENT_LATCHES;
     exec_instr();
     CURRENT_LATCHES = NEXT_LATCHES;
+    if(CURRENT_LATCHES.REGS[PC_NUM] == 0)
+    {
+      halted = 1;
+    }
   }
 }
 
@@ -584,7 +586,9 @@ void scoot(int instr)
 
 void trap(int instr)
 {
-
+  int vector = get_bits(0, 26, instr);
+  int address = MEMORY[vector];
+  NEXT_LATCHES.REGS[PC_NUM] = address;
 }
 
 int get_bits(int start, int end, uint32_t data)
@@ -607,10 +611,12 @@ int get_bits(int start, int end, uint32_t data)
 
 void go(void)
 {
-  while(CURRENT_LATCHES.REGS[PC_NUM] != 0)
+  while(NEXT_LATCHES.REGS[PC_NUM] != 0)
   {
     run("r 1");
   }
+
+  halted = 1;
 }
 
 void error(const char * error_string)
