@@ -82,7 +82,7 @@ void init(char *argv[])
 
   orig_address = CURRENT_LATCHES.REGS[PC_NUM];
   CURRENT_LATCHES.IR = (MEMORY[orig_address] << 24) + (MEMORY[orig_address + 1] << 16) + (MEMORY[orig_address + 2] << 8) + MEMORY[orig_address + 3];
-  CURRENT_LATCHES.REGS[SP_NUM] = MEM_SIZE - 1;
+  CURRENT_LATCHES.REGS[SP_NUM] = MEM_SIZE;
 
   //debug code
   for(int i = 0; i < 28; i++)
@@ -206,15 +206,9 @@ void run(char *cmd)
 
   for(int i = 0; i < num; i++)
   {
-    // do stuff 
     NEXT_LATCHES = CURRENT_LATCHES;
     exec_instr();
     CURRENT_LATCHES = NEXT_LATCHES;
-
-    // debug:
-    // ldump();
-    // char *cmd = "m bb8 bb8";
-    // mdump("m bb8 bb8");
   }
 }
 
@@ -225,8 +219,9 @@ void exec_instr(void)
   NEXT_LATCHES.REGS[PC_NUM] = pc + 4;
   uint32_t instruction = CURRENT_LATCHES.IR;
   uint32_t opcode = get_bits(27, 31, instruction);
-  //printf("INSTR: 0x%x\n", instruction);
-  //printf("OPCODE: 0x%x\n", opcode);
+  //(instruction & 0xF8000000) >> 27;
+  // printf("INSTR: 0x%x\n", instruction);
+  // printf("OPCODE: 0x%x\n", opcode);
 
   switch(opcode)
   {
@@ -266,7 +261,27 @@ void exec_instr(void)
     case 12:
       mov(instruction);
       break;
-    
+    case 13:
+      cleap(instruction);
+      break;
+    case 14:
+      dsr(instruction);
+      break;
+    case 15:
+      harkback(instruction);
+      break;
+    case 16:
+      push(instruction);
+      break;
+    case 17:
+      pop(instruction);
+      break;
+    case 18:
+      scoot(instruction);
+      break;
+    case 19:
+      trap(instruction);
+      break;
   }
 }
 
@@ -474,9 +489,107 @@ void mov(int instr)
   setcc(NEXT_LATCHES.REGS[regA]);
 }
 
+void cleap(int instr)
+{
+  int bits = get_bits(24, 26, instr);
+  int address_offset = get_bits(0, 19, instr);
+  int regA = get_bits(20, 23, instr);
+
+  int n = bits & 0x4;
+  int z = bits & 0x2;
+  int p = bits & 0x1;
+
+  if((CURRENT_LATCHES.N && n) || (CURRENT_LATCHES.Z && z) || (CURRENT_LATCHES.P && p))
+  {
+    int address = CURRENT_LATCHES.REGS[regA] + address_offset; 
+    NEXT_LATCHES.REGS[PC_NUM] = address;
+  }
+}
+
+void dsr(int instr)
+{
+  int regA = get_bits(0, 4, instr);
+  int ret_addr = NEXT_LATCHES.REGS[PC_NUM];
+  int new_addr = CURRENT_LATCHES.REGS[regA];
+
+  NEXT_LATCHES.REGS[PC_NUM] = new_addr;
+  NEXT_LATCHES.REGS[SP_NUM] = CURRENT_LATCHES.REGS[SP_NUM] - 4;
+  MEMORY[NEXT_LATCHES.REGS[SP_NUM]] = (ret_addr & 0xFF000000) >> 24;
+  MEMORY[NEXT_LATCHES.REGS[SP_NUM] + 1] = (ret_addr & 0xFF0000) >> 16;
+  MEMORY[NEXT_LATCHES.REGS[SP_NUM] + 2] = (ret_addr & 0xFF00) >> 8;
+  MEMORY[NEXT_LATCHES.REGS[SP_NUM] + 3] = (ret_addr & 0xFF);
+}
+
+void harkback(int instr)
+{
+  int ret_addr = 0;
+  int sp = NEXT_LATCHES.REGS[SP_NUM];
+  ret_addr += MEMORY[sp] << 24;
+  ret_addr += MEMORY[sp + 1] << 16;
+  ret_addr += MEMORY[sp + 2] << 8;
+  ret_addr += MEMORY[sp + 3];
+
+  NEXT_LATCHES.REGS[PC_NUM] = ret_addr;
+  NEXT_LATCHES.REGS[SP_NUM] = CURRENT_LATCHES.REGS[SP_NUM] + 4;
+}
+
+void push(int instr)
+{
+  int regA = get_bits(0, 3, instr);
+  int ret_addr = CURRENT_LATCHES.REGS[regA];
+  
+  NEXT_LATCHES.REGS[SP_NUM] = CURRENT_LATCHES.REGS[SP_NUM] - 4;
+  MEMORY[NEXT_LATCHES.REGS[SP_NUM]] = (ret_addr & 0xFF000000) >> 24;
+  MEMORY[NEXT_LATCHES.REGS[SP_NUM] + 1] = (ret_addr & 0xFF0000) >> 16;
+  MEMORY[NEXT_LATCHES.REGS[SP_NUM] + 2] = (ret_addr & 0xFF00) >> 8;
+  MEMORY[NEXT_LATCHES.REGS[SP_NUM] + 3] = (ret_addr & 0xFF);
+}
+
+void pop(int instr)
+{
+  int regA = get_bits(0, 3, instr);
+
+  int ret_addr = 0;
+  int sp = NEXT_LATCHES.REGS[SP_NUM];
+  ret_addr += MEMORY[sp] << 24;
+  ret_addr += MEMORY[sp + 1] << 16;
+  ret_addr += MEMORY[sp + 2] << 8;
+  ret_addr += MEMORY[sp + 3];
+
+  NEXT_LATCHES.REGS[regA] = ret_addr;
+  NEXT_LATCHES.REGS[SP_NUM] = CURRENT_LATCHES.REGS[SP_NUM] + 4;
+}
+
+void scoot(int instr)
+{
+  int regA = get_bits(23, 26, instr);
+  int fancy_bits = get_bits(21, 22, instr);
+  int imm = get_bits(0, 4, instr);
+  if(fancy_bits == 0)
+  {
+    NEXT_LATCHES.REGS[regA] = NEXT_LATCHES.REGS[regA] << imm;
+  }
+  else if(fancy_bits == 1)
+  {
+    uint32_t temp = (uint32_t)NEXT_LATCHES.REGS[regA];
+    NEXT_LATCHES.REGS[regA] = temp >> imm;
+  }
+  else if(fancy_bits == 3)
+  {
+    NEXT_LATCHES.REGS[regA] = NEXT_LATCHES.REGS[regA] >> imm;
+  }
+  
+  setcc(NEXT_LATCHES.REGS[regA]);
+}
+
+void trap(int instr)
+{
+
+}
+
 int get_bits(int start, int end, uint32_t data)
 {
-  int value = 0;
+  uint32_t value = 0;
   int mask = 0x01;
 
   for(int i = 0; i <= end; i++)

@@ -441,10 +441,10 @@ public class Main
       if(isHex(tokens[2]))
       {
         int imm = hexToImm(tokens[2]);
-        if(imm > 0X7FFFFF || imm < -0X400000)
-        {
-          throw new AssemblerException("Immediate: " + imm + " is not a valid immediate");
-        }
+        // if(imm > 0X7FFFFF || imm < -0X400000)
+        // {
+        //   throw new AssemblerException("Immediate: " + imm + " is not a valid immediate");
+        // }
         outputStream.writeBits(23, imm);
       }
       else
