@@ -39,8 +39,6 @@ public class Main
     }
     else
     {
-      // System.out.println(args[0]);
-      // System.out.println(Arrays.toString(args[0].split("\\.")));
       binaryFile = args[0].split("\\.")[0] + FILE_EXTENSION;
     }
 
@@ -71,7 +69,6 @@ public class Main
           {
             throw new AssemblerException("Invalid .ORIG address");
           }
-          // System.out.println(beginningAddress);
         }
       }
       else
@@ -89,7 +86,6 @@ public class Main
 
     AssemblyLine.outputStream.flush();
     AssemblyLine.outputStream.close();
-    // System.out.println(file.nextLine());
   }
 
   private static void setup() throws IOException
@@ -175,7 +171,7 @@ public class Main
       return offset;
     }
     
-    if(!OPCODE_ARRAY.contains(tokens[0]) && !tokens[0].startsWith("."))
+    if(!isOpcode(tokens[0]) && !tokens[0].startsWith("."))
     {
       int address = beginningAddress + offset;
       
@@ -432,7 +428,7 @@ public class Main
       int opcode = 12;
       if(tokens.length != 3)
       {
-        throw new AssemblerException("Incorrect number of arguments for " + OPCODE_ARRAY.get(opcode) + " instruction.");
+        throw new AssemblerException("Incorrect number of arguments for " + tokens[0] + " instruction.");
       }
 
       registerCheck(tokens[1]);
@@ -441,10 +437,10 @@ public class Main
       if(isHex(tokens[2]))
       {
         int imm = hexToImm(tokens[2]);
-        // if(imm > 0X7FFFFF || imm < -0X400000)
-        // {
-        //   throw new AssemblerException("Immediate: " + imm + " is not a valid immediate");
-        // }
+        if(imm > 0X7FFFFF || imm < -0X7FFFFF)
+        {
+          throw new AssemblerException("Immediate: " + imm + " is not a valid immediate");
+        }
         outputStream.writeBits(23, imm);
       }
       else
@@ -470,7 +466,7 @@ public class Main
       int opcode = 13;
       if(tokens.length != 3)
       {
-        throw new AssemblerException("Incorrect number of arguments for " + OPCODE_ARRAY.get(opcode) + " instruction.");
+        throw new AssemblerException("Incorrect number of arguments for " + tokens[0] + " instruction.");
       }
 
       registerCheck(tokens[1]);
@@ -483,7 +479,7 @@ public class Main
         throw new AssemblerException("Second LEAP argument must specify a hex offset");
       }
       int imm = hexToImm(tokens[2]);
-      if(imm > 0XFFFFF || imm < -0X80000)
+      if(imm > 0XFFFFF || imm < -0XFFFFF)
       {
         throw new AssemblerException("Immediate: " + imm + " is not a valid immediate");
       }
@@ -500,7 +496,7 @@ public class Main
       int opcode = 15;
       if (tokens.length != 1)
       {
-        throw new AssemblerException("Incorrect number of arguments for " + OPCODE_ARRAY.get(opcode) + " instruction.");
+        throw new AssemblerException("Incorrect number of arguments for " + tokens[0] + " instruction.");
       }
 
       outputStream.writeBits(BITS_PER_OPCODE, opcode);
@@ -522,7 +518,7 @@ public class Main
       int opcode = 18;
       if(tokens.length != 3)
       {
-        throw new AssemblerException("Incorrect number of arguments for " + OPCODE_ARRAY.get(opcode) + " instruction.");
+        throw new AssemblerException("Incorrect number of arguments for " + tokens[0] + " instruction.");
       }
 
       registerCheck(tokens[1]);
@@ -549,7 +545,7 @@ public class Main
       int opcode = 19;
       if(tokens.length != 2)
       {
-        throw new AssemblerException("Incorrect number of arguments for " + OPCODE_ARRAY.get(opcode) + " instruction.");
+        throw new AssemblerException("Incorrect number of arguments for " + tokens[0] + " instruction.");
       }
 
       if(!isHex(tokens[1]))
@@ -571,7 +567,7 @@ public class Main
     {
       if(tokens.length != 2)
       {
-        throw new AssemblerException("Incorrect number of arguments for " + OPCODE_ARRAY.get(opcode) + " instruction.");
+        throw new AssemblerException("Incorrect number of arguments for " + tokens[0] + " instruction.");
       }
 
       registerCheck(tokens[1]);
@@ -585,7 +581,7 @@ public class Main
     {
       if(tokens.length != 4)
       {
-        throw new AssemblerException("Incorrect number of arguments for " + OPCODE_ARRAY.get(opcode) + " instruction.");
+        throw new AssemblerException("Incorrect number of arguments for " + tokens[0] + " instruction.");
       }
       // System.out.println("GOT HERE!");
       for(int i = 1; i < 3; i++)
@@ -602,7 +598,7 @@ public class Main
       {
         int imm = hexToImm(tokens[3]);
 
-        if(imm > 0XFFFF || imm < -0X8000)
+        if(imm > 0XFFFF || imm < -0XFFFF)
         {
           throw new AssemblerException("Immediate: " + imm + " is not a valid immediate");  
         }
@@ -622,7 +618,7 @@ public class Main
     {
       if(tokens.length != 3)
       {
-        throw new AssemblerException("Incorrect number of arguments for " + OPCODE_ARRAY.get(opcode) + " instruction.");
+        throw new AssemblerException("Incorrect number of arguments for " + tokens[0] + " instruction.");
       }
 
       for(int i = 1; i < 3; i++)
